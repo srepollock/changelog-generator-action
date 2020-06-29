@@ -1,0 +1,43 @@
+name: Changelog Generator
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  generate:
+      name: Changelog Generator
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+          with:
+              # Needs the entire history of the project to generate. The script handles everything else.
+              fetch-depth: 0
+        - name: Create changelog
+          # Action location goes here. It's in root for this workflow. It may be different for your repo.
+          uses: ./
+        - name: Upload artifacts
+          uses: actions/upload-artifact@v2
+          with:
+              name: changelog
+              path: /home/runner/work/_temp/_github_home/CHANGELOG.md
+  upload:
+      name: Upload Changelog to PR
+      runs-on: ubuntu-latest
+      needs: generate
+      steps:
+        - uses: actions/checkout@v2
+          with:
+              ref: ${{ github.event.pull_request.head.ref }}
+        - name: Download results from the generate job
+          uses: actions/download-artifact@v2
+          with:
+              name: changelog
+        - name: Add artifact to repo
+          run: |
+              git config --global user.name "Spencer Pollock"
+              git config --global user.email "srepollock@users.noreply.github.com"
+              git add --all
+              git commit -m "docs: Generated Changelog for PR"
+              git push
+
