@@ -1,4 +1,4 @@
-name: "Changelog Generator"
+name: "Simple Changelog Generator"
 author: "Spencer Pollock <spencer@spollock.ca>"
 description: "Generates a changelog from commit history based on Angular commit message syntax"
 outputs:
