@@ -19,7 +19,7 @@ The changelog file
 ## Example usage
 
 ```
-uses: srepollock/changelog-generator@master
+uses: srepollock/changelog-generator-action@master
 ```
 
 Please see the workflow in `.github/workflows` of this repo to see how the job steps are setup.
