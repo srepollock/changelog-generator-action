@@ -4,10 +4,11 @@ import re
 import shlex
 import subprocess
 import time
+import sys
 
 def get_commit_log():
     output = subprocess.check_output(shlex.split('git log --pretty=%s --color'), stderr=subprocess.STDOUT)
-    output = output.decode('ascii')
+    output = output.decode('utf-8')
     output = output.split('\n')
     return output
 
