@@ -16,28 +16,32 @@ jobs:
         - name: Create changelog
           # Action location goes here. It's in root for this workflow. It may be different for your repo.
           uses: ./
-        - name: Upload artifacts
-          uses: actions/upload-artifact@v2
           with:
-              name: changelog
-              path: /home/runner/work/_temp/_github_home/CHANGELOG.md
-  upload:
-      name: Upload Changelog to PR
-      runs-on: ubuntu-latest
-      needs: generate
-      steps:
-        - uses: actions/checkout@v2
-          with:
-              ref: ${{ github.event.pull_request.head.ref }}
-        - name: Download results from the generate job
-          uses: actions/download-artifact@v2
-          with:
-              name: changelog
-        - name: Add artifact to repo
-          run: |
-              git config --global user.name "Spencer Pollock"
-              git config --global user.email "srepollock@users.noreply.github.com"
-              git add --all
-              git commit -m "docs: Generated Changelog for PR"
-              git push
-
+            REPO_NAME: 'srepollock/changelog-generator-action'
+            ACCESS_TOKEN: ${{secrets.GITHUB_TOKEN}}
+            PATH: '/CHANGELOG.md'
+            COMMIT_MESSAGE: 'docs(CHANGELOG): update release notes'
+  #       - name: Upload artifacts
+  #         uses: actions/upload-artifact@v2
+  #         with:
+  #             name: changelog
+  #             path: /home/runner/work/_temp/_github_home/CHANGELOG.md
+  # upload:
+  #     name: Upload Changelog to PR
+  #     runs-on: ubuntu-latest
+  #     needs: generate
+  #     steps:
+  #       - uses: actions/checkout@v2
+  #         with:
+  #             ref: ${{ github.event.pull_request.head.ref }}
+  #       - name: Download results from the generate job
+  #         uses: actions/download-artifact@v2
+  #         with:
+  #             name: changelog
+  #       - name: Add artifact to repo
+  #         run: |
+  #             git config --global user.name "Spencer Pollock"
+  #             git config --global user.email "srepollock@users.noreply.github.com"
+  #             git add --all
+  #             git commit -m "docs: Generated Changelog for PR"
+  #             git push
