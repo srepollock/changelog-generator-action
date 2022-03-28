@@ -31,10 +31,10 @@ def get_commit_log() -> list[str]:
 
 
 def strip_commits(commits: list) -> list:
-    # feat, fix, refactor, test
+    # feat, fix, docs, lint, refactor, test, chore
     output = []
     for line in commits:
-        if re.findall(r'^(feat|fix|refactor|test|ci)', line):
+        if re.findall(r'^(feat|fix|docs|lint|refactor|test|chore)', line):
             output.append(line)
     return output
 
@@ -48,23 +48,24 @@ def overwrite_changelog(commits: list) -> str:
         if re.findall(r'^feat', feat):
             changelog += '* {}\n'.format(feat)
 
-        changelog += '\n## Bugs\n\n'
+        changelog += '\n## Bugfixes\n\n'
 
-        for fix in commits:
-            if re.findall(r'^fix', fix):
-                changelog += '* {}\n'.format(fix)
+    for fix in commits:
+        if re.findall(r'^fix', fix):
+            changelog += '* {}\n'.format(fix)
 
-        changelog += '\n## Other\n\n'
+    changelog += '\n## Other\n\n'
 
-        for other in commits:
-            if re.findall(r'^(refactor|test|ci)', other):
-                changelog += '* {}\n'.format(other)
+    for other in commits:
+        if re.findall(r'^(docs|lint|refactor|test|chore)', other):
+            changelog += '* {}\n'.format(other)
 
-        changelog += '\n\n\n> Changelog generated through the projects\' GitHub Actions.'
+    changelog += '\n\n\n> Changelog generated through the projects\' GitHub Actions.'
 
-        with open("/github/home/CHANGELOG.md", "w+") as file:
-            file.write(changelog)
-            file.close()
+    with open("/github/home/CHANGELOG.md", "w+") as file:
+        file.write(changelog)
+        file.close()
+
     return changelog
 
 
