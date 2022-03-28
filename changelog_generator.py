@@ -29,23 +29,6 @@ def github_login(ACCESS_TOKEN, REPO_NAME):
     return repo
 
 
-def get_inputs(input_name):
-    '''
-    Get a Github actions input by name
-
-    Args:
-        input_name (str): input_name in workflow file
-
-    Returns:
-        string: action_input
-
-    References
-    ----------
-    [1] https://help.github.com/en/actions/automating-your-workflow-with-github-actions/metadata-syntax-for-github-actions#example
-    '''
-    return os.getenv('INPUT_{}'.format(input_name).upper())
-
-
 def write_changelog(repo, changelog, path, commit_message):
     '''
     Write contributors list to file if it differs
@@ -108,10 +91,10 @@ def overwrite_changelog(commits):
 
 
 def main():
-    ACCESS_TOKEN = get_inputs('ACCESS_TOKEN')
-    REPO_NAME = get_inputs('REPO_NAME')
-    PATH = get_inputs('PATH')
-    COMMIT_MESSAGE = get_inputs('COMMIT_MESSAGE')
+    ACCESS_TOKEN = sys.argv[1]
+    REPO_NAME = sys.argv[2]
+    PATH = sys.argv[3]
+    COMMIT_MESSAGE = sys.argv[4]
     commits = get_commit_log()
     commits = strip_commits(sorted(commits))
     changelog = overwrite_changelog(commits)
