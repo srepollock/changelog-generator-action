@@ -91,8 +91,8 @@ def overwrite_changelog(commits):
 
 
 def main():
-    ACCESS_TOKEN = sys.argv[1]
-    REPO_NAME = sys.argv[2]
+    ACCESS_TOKEN = sys.argv[2]
+    REPO_NAME = sys.argv[1]
     PATH = sys.argv[3]
     COMMIT_MESSAGE = sys.argv[4]
     commits = get_commit_log()
