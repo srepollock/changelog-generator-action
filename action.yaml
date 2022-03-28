@@ -27,6 +27,7 @@ runs:
         - ${{ inputs.ACCESS_TOKEN }}
         - ${{ inputs.PATH }}
         - ${{ inputs.COMMIT_MESSAGE }}
+
 branding:
     icon: 'book'
     color: 'blue'
