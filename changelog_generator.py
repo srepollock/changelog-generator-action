@@ -2,7 +2,7 @@
 
 import re
 import sys
-from github import Github
+from github import Github, InputGitAuthor
 
 
 class Generator:
@@ -38,7 +38,7 @@ class Generator:
             if re.findall(r'^fix', fix):
                 changelog += '* {}\n'.format(fix)
 
-        changelog += '\n## Other\n\n'
+        changelog += '\n## Other changes\n\n'
 
         for other in commits:
             if re.findall(r'^(docs|lint|refactor|test|chore)', other):
@@ -52,6 +52,10 @@ class Generator:
         commits = self.get_filtered_commits()
         changelog = self.create_new_changelog(commits)
         contents = self.repo.get_contents(self.path)
+        author = InputGitAuthor(
+            name="github-actions[bot]",
+            email="github-actions[bot]@users.noreply.github.com"
+        )
 
         # Don't update changelog when there are no changes
         if contents.decoded_content.decode('utf-8') != changelog:
@@ -60,7 +64,9 @@ class Generator:
                 path=contents.path,
                 message=self.commit_message,
                 content=changelog,
-                sha=contents.sha
+                sha=contents.sha,
+                committer=author,
+                author=author
             )
         else:
             print("New changelog and old changelog are same - update skipped")
