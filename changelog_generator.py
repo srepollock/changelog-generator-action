@@ -15,7 +15,7 @@ class Generator:
     def get_filtered_commits(self) -> list:
         # feat, fix, docs, lint, refactor, test, chore
         output = []
-        for commit in self.repo.get_commits():
+        for commit in self.repo.get_commits().reversed:
             message = commit.commit.message
             if re.findall(r'^(feat|fix|docs|lint|refactor|test|chore)', message):
                 # This prevents automation from artificially increasing changelog size
@@ -24,7 +24,7 @@ class Generator:
         return output
 
     def create_new_changelog(self, commits: list) -> str:
-        print("Going to write the following commits:\n{}".format(commits))
+        print("Building changelog based on following commits:\n{}".format(commits))
 
         changelog = '# Changelog\n\n\n## Features\n\n'
 
@@ -49,18 +49,21 @@ class Generator:
         return changelog
 
     def update_changelog(self):
-        commits = sorted(self.get_filtered_commits())
+        commits = self.get_filtered_commits()
         changelog = self.create_new_changelog(commits)
         contents = self.repo.get_contents(self.path)
 
         # Don't update changelog when there are no changes
         if contents.decoded_content.decode('utf-8') != changelog:
+            print("Updating changelog in remote repository")
             self.repo.update_file(
                 path=contents.path,
                 message=self.commit_message,
                 content=changelog,
                 sha=contents.sha
             )
+        else:
+            print("New changelog and old changelog are same - update skipped")
 
 
 def main():
