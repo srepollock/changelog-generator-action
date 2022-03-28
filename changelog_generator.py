@@ -3,47 +3,26 @@
 import re
 import shlex
 import subprocess
-import time
 import sys
-import os
 from github import Github
+from github.Repository import Repository
 
 
-def github_login(ACCESS_TOKEN, REPO_NAME):
-    '''
-    Use Pygithub to login to the repository
-
-    Args:
-        ACCESS_TOKEN (string): github Access Token
-        REPO_NAME (string): repository name
-
-    Returns:
-        github.Repository.Repository: object represents the repo
-
-    References:
-    ----------
-    [1]https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository
-    '''
-    g = Github(ACCESS_TOKEN)
-    repo = g.get_repo(REPO_NAME)
+# Use Pygithub to login to the repository
+# Reference: https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository
+def github_login(access_token: str, repo_name: str) -> Repository:
+    g = Github(access_token)
+    repo = g.get_repo(repo_name)
     return repo
 
 
-def write_changelog(repo, changelog, path, commit_message):
-    '''
-    Write contributors list to file if it differs
-
-    Args:
-        repo (github.Repository.Repository): object represents the repo
-        changelog (string): content of changelog
-        path (string): the file to write
-        commit_message (string): commit message
-    '''
+# Write contributors list to file if it differs
+def write_changelog(repo: Repository, changelog: str, path: str, commit_message: str) -> None:
     contents = repo.get_contents(path)
     repo.update_file(contents.path, commit_message, changelog, contents.sha)
 
 
-def get_commit_log():
+def get_commit_log() -> list[str]:
     output = subprocess.check_output(
         shlex.split('git log --pretty=%s --color'), stderr=subprocess.STDOUT)
     output = output.decode('utf-8')
@@ -51,7 +30,7 @@ def get_commit_log():
     return output
 
 
-def strip_commits(commits):
+def strip_commits(commits: list) -> list:
     # feat, fix, refactor, test
     output = []
     for line in commits:
@@ -60,46 +39,47 @@ def strip_commits(commits):
     return output
 
 
-def overwrite_changelog(commits):
+def overwrite_changelog(commits: list) -> str:
     print("Going to write the following commits:\n{}".format(commits))
-    changelog = ''
-    with open("/github/home/CHANGELOG.md", "w+") as file:
-        file.write('# Changelog\n\n\n## Features\n\n')
-        changelog += '# Changelog\n\n\n## Features\n\n'
-        for feat in commits:
-            if re.findall(r'^feat', feat):
-                file.write('* {}\n'.format(feat))
-                changelog += '* {}\n'.format(feat)
-        file.write('\n## Bugs\n\n')
+
+    changelog = '# Changelog\n\n\n## Features\n\n'
+
+    for feat in commits:
+        if re.findall(r'^feat', feat):
+            changelog += '* {}\n'.format(feat)
+
         changelog += '\n## Bugs\n\n'
+
         for fix in commits:
             if re.findall(r'^fix', fix):
-                file.write('* {}\n'.format(fix))
                 changelog += '* {}\n'.format(fix)
-        file.write('\n## Other\n\n')
+
         changelog += '\n## Other\n\n'
+
         for other in commits:
             if re.findall(r'^(refactor|test|ci)', other):
-                file.write('* {}\n'.format(other))
                 changelog += '* {}\n'.format(other)
-        file.write(
-            '\n\n\n> Changelog generated through the projects\' GitHub Actions.'
-        )
+
         changelog += '\n\n\n> Changelog generated through the projects\' GitHub Actions.'
-        file.close()
+
+        with open("/github/home/CHANGELOG.md", "w+") as file:
+            file.write(changelog)
+            file.close()
     return changelog
 
 
 def main():
-    ACCESS_TOKEN = sys.argv[2]
-    REPO_NAME = sys.argv[1]
-    PATH = sys.argv[3]
-    COMMIT_MESSAGE = sys.argv[4]
+    repo_name = sys.argv[1]
+    access_token = sys.argv[2]
+    path = sys.argv[3]
+    commit_message = sys.argv[4]
+
     commits = get_commit_log()
     commits = strip_commits(sorted(commits))
     changelog = overwrite_changelog(commits)
-    repo = github_login(ACCESS_TOKEN, REPO_NAME)
-    write_changelog(repo, changelog, PATH, COMMIT_MESSAGE)
+
+    repo = github_login(access_token, repo_name)
+    write_changelog(repo, changelog, path, commit_message)
 
 
 if __name__ == '__main__':
