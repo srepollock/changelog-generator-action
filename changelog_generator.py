@@ -18,7 +18,9 @@ class Generator:
         for commit in self.repo.get_commits():
             message = commit.commit.message
             if re.findall(r'^(feat|fix|docs|lint|refactor|test|chore)', message):
-                output.append(message)
+                # This prevents automation from artificially increasing changelog size
+                if message != self.commit_message:
+                    output.append(message)
         return output
 
     def create_new_changelog(self, commits: list) -> str:
