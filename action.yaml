@@ -22,6 +22,12 @@ outputs:
 runs:
     using: 'docker'
     image: 'Dockerfile'
+    args:
+        - ${{ inputs.REPO_NAME }}
+        - ${{ inputs.ACCESS_TOKEN }}
+        - ${{ inputs.PATH }}
+        - ${{ inputs.COMMIT_MESSAGE }}
+
 branding:
     icon: 'book'
     color: 'blue'

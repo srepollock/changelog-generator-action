@@ -1,122 +1,86 @@
 #!/usr/bin/env python3
 
 import re
-import shlex
-import subprocess
-import time
 import sys
-import os
-from github import Github
+from github import Github, InputGitAuthor
 
 
-def github_login(ACCESS_TOKEN, REPO_NAME):
-    '''
-    Use Pygithub to login to the repository
+class Generator:
+    def __init__(self, repo_name: str, access_token: str, path: str, commit_message: str):
+        self.github = Github(access_token)
+        self.repo = self.github.get_repo(repo_name)
+        self.path = path
+        self.commit_message = commit_message
 
-    Args:
-        ACCESS_TOKEN (string): github Access Token
-        REPO_NAME (string): repository name
+    def get_filtered_commits(self) -> list:
+        # feat, fix, docs, lint, refactor, test, chore
+        output = []
+        for commit in self.repo.get_commits().reversed:
+            message = commit.commit.message
+            if re.findall(r'^(feat|fix|docs|lint|refactor|test|chore)', message):
+                # This prevents automation from artificially increasing changelog size
+                if message != self.commit_message:
+                    output.append(message)
+        return output
 
-    Returns:
-        github.Repository.Repository: object represents the repo
+    def create_new_changelog(self, commits: list) -> str:
+        print("Building changelog based on following commits:\n{}".format(commits))
 
-    References:
-    ----------
-    [1]https://pygithub.readthedocs.io/en/latest/github_objects/Repository.html#github.Repository.Repository
-    '''
-    g = Github(ACCESS_TOKEN)
-    repo = g.get_repo(REPO_NAME)
-    return repo
+        changelog = '# Changelog\n\n\n## Features\n\n'
 
-
-def get_inputs(input_name):
-    '''
-    Get a Github actions input by name
-
-    Args:
-        input_name (str): input_name in workflow file
-
-    Returns:
-        string: action_input
-
-    References
-    ----------
-    [1] https://help.github.com/en/actions/automating-your-workflow-with-github-actions/metadata-syntax-for-github-actions#example
-    '''
-    return os.getenv('INPUT_{}'.format(input_name).upper())
-
-
-def write_changelog(repo, changelog, path, commit_message):
-    '''
-    Write contributors list to file if it differs
-
-    Args:
-        repo (github.Repository.Repository): object represents the repo
-        changelog (string): content of changelog
-        path (string): the file to write
-        commit_message (string): commit message
-    '''
-    contents = repo.get_contents(path)
-    repo.update_file(contents.path, commit_message, changelog, contents.sha)
-
-
-def get_commit_log():
-    output = subprocess.check_output(
-        shlex.split('git log --pretty=%s --color'), stderr=subprocess.STDOUT)
-    output = output.decode('utf-8')
-    output = output.split('\n')
-    return output
-
-
-def strip_commits(commits):
-    # feat, fix, refactor, test
-    output = []
-    for line in commits:
-        if re.findall(r'^(feat|fix|refactor|test|ci)', line):
-            output.append(line)
-    return output
-
-
-def overwrite_changelog(commits):
-    print("Going to write the following commits:\n{}".format(commits))
-    changelog = ''
-    with open("/github/home/CHANGELOG.md", "w+") as file:
-        file.write('# Changelog\n\n\n## Features\n\n')
-        changelog += '# Changelog\n\n\n## Features\n\n'
         for feat in commits:
             if re.findall(r'^feat', feat):
-                file.write('* {}\n'.format(feat))
                 changelog += '* {}\n'.format(feat)
-        file.write('\n## Bugs\n\n')
-        changelog += '\n## Bugs\n\n'
+
+        changelog += '\n## Bugfixes\n\n'
+
         for fix in commits:
             if re.findall(r'^fix', fix):
-                file.write('* {}\n'.format(fix))
                 changelog += '* {}\n'.format(fix)
-        file.write('\n## Other\n\n')
-        changelog += '\n## Other\n\n'
+
+        changelog += '\n## Other changes\n\n'
+
         for other in commits:
-            if re.findall(r'^(refactor|test|ci)', other):
-                file.write('* {}\n'.format(other))
+            if re.findall(r'^(docs|lint|refactor|test|chore)', other):
                 changelog += '* {}\n'.format(other)
-        file.write(
-            '\n\n\n> Changelog generated through the projects\' GitHub Actions.'
-        )
+
         changelog += '\n\n\n> Changelog generated through the projects\' GitHub Actions.'
-        file.close()
-    return changelog
+
+        return changelog
+
+    def update_changelog(self):
+        commits = self.get_filtered_commits()
+        changelog = self.create_new_changelog(commits)
+        contents = self.repo.get_contents(self.path)
+        author = InputGitAuthor(
+            name="github-actions[bot]",
+            email="github-actions[bot]@users.noreply.github.com"
+        )
+
+        # Don't update changelog when there are no changes
+        if contents.decoded_content.decode('utf-8') != changelog:
+            print("Updating changelog in remote repository")
+            self.repo.update_file(
+                path=contents.path,
+                message=self.commit_message,
+                content=changelog,
+                sha=contents.sha,
+                committer=author,
+                author=author
+            )
+        else:
+            print("New changelog and old changelog are same - update skipped")
 
 
 def main():
-    ACCESS_TOKEN = get_inputs('ACCESS_TOKEN')
-    REPO_NAME = get_inputs('REPO_NAME')
-    PATH = get_inputs('PATH')
-    COMMIT_MESSAGE = get_inputs('COMMIT_MESSAGE')
-    commits = get_commit_log()
-    commits = strip_commits(sorted(commits))
-    changelog = overwrite_changelog(commits)
-    repo = github_login(ACCESS_TOKEN, REPO_NAME)
-    write_changelog(repo, changelog, PATH, COMMIT_MESSAGE)
+    generator = Generator(
+        repo_name=sys.argv[1],
+        access_token=sys.argv[2],
+        path=sys.argv[3],
+        commit_message=sys.argv[4]
+    )
+
+    generator.update_changelog()
 
 
 if __name__ == '__main__':
