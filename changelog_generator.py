@@ -53,7 +53,14 @@ class Generator:
         changelog = self.create_new_changelog(commits)
         contents = self.repo.get_contents(self.path)
 
-        self.repo.update_file(contents.path, self.commit_message, changelog, contents.sha)
+        # Don't update changelog when there are no changes
+        if contents.decoded_content.decode('utf-8') != changelog:
+            self.repo.update_file(
+                path=contents.path,
+                message=self.commit_message,
+                content=changelog,
+                sha=contents.sha
+            )
 
 
 def main():
